@@ -4,9 +4,8 @@ import { useDispatch } from 'react-redux';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { loginSuccess } from '../../store/slices/authSlice';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext'; // Updated Import
 
-// Validation Schema
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
   password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
@@ -14,10 +13,9 @@ const LoginSchema = Yup.object().shape({
 
 export default function LoginScreen({ navigation }) {
   const dispatch = useDispatch();
+  const { theme, isDark } = useTheme(); // Use Hook
 
   const handleLogin = (values) => {
-    // In a real app, you would send these to a backend.
-    // Here, we simulate a successful response.
     const user = {
       name: 'Mora Student',
       email: values.email,
@@ -29,11 +27,11 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]} // Dynamic Background
     >
       <View style={styles.formContainer}>
-        <Text style={styles.title}>MoraShelf</Text>
-        <Text style={styles.subtitle}>Login to continue</Text>
+        <Text style={[styles.title, { color: theme.primary }]}>MoraShelf</Text>
+        <Text style={[styles.subtitle, { color: theme.textSub }]}>Login to continue</Text>
 
         <Formik
           initialValues={{ email: '', password: '' }}
@@ -42,42 +40,52 @@ export default function LoginScreen({ navigation }) {
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <View>
-              {/* Email Input */}
               <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Email</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { 
+                    borderColor: theme.border, 
+                    color: theme.text,
+                    backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' // Input specific bg
+                  }]}
                   placeholder="student@uom.lk"
+                  placeholderTextColor={theme.textSub}
                   onChangeText={handleChange('email')}
                   onBlur={handleBlur('email')}
                   value={values.email}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                {touched.email && errors.email && <Text style={{ color: theme.error || 'red', fontSize: 12 }}>{errors.email}</Text>}
               </View>
 
-              {/* Password Input */}
               <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Password</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { 
+                    borderColor: theme.border, 
+                    color: theme.text,
+                    backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' 
+                  }]}
                   placeholder="******"
+                  placeholderTextColor={theme.textSub}
                   onChangeText={handleChange('password')}
                   onBlur={handleBlur('password')}
                   value={values.password}
                   secureTextEntry
                 />
-                {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                {touched.password && errors.password && <Text style={{ color: theme.error || 'red', fontSize: 12 }}>{errors.password}</Text>}
               </View>
 
-              {/* Submit Button */}
-              <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>Login</Text>
+              <TouchableOpacity 
+                style={[styles.button, { backgroundColor: theme.primary }]} 
+                onPress={handleSubmit}
+              >
+                <Text style={[styles.buttonText, { color: isDark ? '#000' : '#FFF' }]}>Login</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkButton}>
-                <Text style={styles.linkText}>Don't have an account? Register</Text>
+                <Text style={[styles.linkText, { color: theme.tint }]}>Don't have an account? Register</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -88,29 +96,25 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, justifyContent: 'center' },
+  container: { flex: 1, justifyContent: 'center' },
   formContainer: { padding: 24 },
-  title: { fontSize: 32, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: colors.textLight, textAlign: 'center', marginBottom: 32 },
+  title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
   inputWrapper: { marginBottom: 16 },
-  label: { fontSize: 14, color: colors.text, marginBottom: 8, fontWeight: '500' },
+  label: { fontSize: 14, marginBottom: 8, fontWeight: '500' },
   input: { 
     borderWidth: 1, 
-    borderColor: '#E0E0E0', 
     borderRadius: 8, 
     padding: 12, 
     fontSize: 16, 
-    backgroundColor: '#FAFAFA' 
   },
-  errorText: { color: colors.error, fontSize: 12, marginTop: 4 },
   button: { 
-    backgroundColor: colors.primary, 
     padding: 16, 
     borderRadius: 8, 
     alignItems: 'center', 
     marginTop: 16 
   },
-  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  buttonText: { fontSize: 16, fontWeight: 'bold' },
   linkButton: { marginTop: 16, alignItems: 'center' },
-  linkText: { color: colors.secondary, fontWeight: '600' }
+  linkText: { fontWeight: '600' }
 });

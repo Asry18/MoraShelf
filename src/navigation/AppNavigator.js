@@ -1,46 +1,45 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// IMPORT REDUX HOOKS
 import { useSelector, useDispatch } from 'react-redux'; 
 
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import BookDetailsScreen from '../screens/home/BookDetailsScreen';
-import { colors } from '../theme/colors';
-// IMPORT ACTIONS
 import { loadUser } from '../store/slices/authSlice';
 import { loadFavorites } from '../store/slices/favoritesSlice';
+import { useTheme } from '../theme/ThemeContext'; // Import Hook
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  // --- NEW REDUX LOGIC STARTS HERE ---
   const dispatch = useDispatch();
-  // Read 'user' and 'isLoading' from the auth slice
   const { user, isLoading } = useSelector((state) => state.auth);
+  
+  // Get Theme Data
+  const { theme, isDark } = useTheme();
 
-  // Load saved data when app starts
   useEffect(() => {
     dispatch(loadUser());
     dispatch(loadFavorites());
   }, [dispatch]);
 
-  // Show spinner while checking storage
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
-  // --- NEW REDUX LOGIC ENDS HERE ---
+
+  // Define Navigation Theme for React Navigation internals
+  const navigationTheme = isDark ? DarkTheme : DefaultTheme;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? ( // Check real user state
+        {user ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen 
@@ -49,8 +48,9 @@ export default function AppNavigator() {
               options={{ 
                 headerShown: true, 
                 title: 'Details',
-                headerStyle: { backgroundColor: colors.primary },
-                headerTintColor: colors.white
+                // DYNAMIC HEADER STYLES
+                headerStyle: { backgroundColor: theme.primary },
+                headerTintColor: isDark ? '#000' : '#FFF' // Gold needs black text, Maroon needs white
               }} 
             />
           </>

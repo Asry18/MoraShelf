@@ -2,15 +2,15 @@ import React from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
 import { getCoverUrl } from '../../services/api';
 import { toggleFavorite } from '../../store/slices/favoritesSlice';
+import { useTheme } from '../../theme/ThemeContext'; // Import Hook
 
-export default function BookDetailsScreen({ route, navigation }) {
+export default function BookDetailsScreen({ route }) {
   const { book } = route.params;
   const dispatch = useDispatch();
+  const { theme, isDark } = useTheme(); // Get Theme
   
-  // Check if book is already in favorites
   const favorites = useSelector(state => state.favorites.items);
   const isFavorite = favorites.some(item => item.key === book.key);
 
@@ -19,9 +19,9 @@ export default function BookDetailsScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* Header Image */}
-      <View style={styles.imageContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* Header Image Background matches theme surface */}
+      <View style={[styles.imageContainer, { backgroundColor: theme.surface }]}>
         <Image 
           source={{ uri: getCoverUrl(book.cover_i, 'L') }} 
           style={styles.cover}
@@ -29,36 +29,34 @@ export default function BookDetailsScreen({ route, navigation }) {
         />
       </View>
 
-      {/* Details Section */}
       <View style={styles.detailsContainer}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{book.title}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{book.title}</Text>
           <TouchableOpacity onPress={handleToggleFavorite} style={styles.favButton}>
             <Feather 
               name="heart" 
               size={28} 
-              color={isFavorite ? colors.error : colors.textLight} 
-              style={isFavorite ? { fill: colors.error } : {}} // Fill if active (won't work directly on Feather but color changes)
+              color={isFavorite ? (theme.error || 'red') : theme.textSub} 
             />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.author}>by {book.author_name ? book.author_name.join(', ') : 'Unknown Author'}</Text>
+        <Text style={[styles.author, { color: theme.textSub }]}>
+          by {book.author_name ? book.author_name.join(', ') : 'Unknown Author'}
+        </Text>
         
         <View style={styles.badgeRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Published: {book.first_publish_year}</Text>
-          </View>
-          <View style={[styles.badge, { backgroundColor: '#E3F2FD' }]}>
-             {/* Show reading logic could go here */}
-            <Text style={[styles.badgeText, { color: '#1565C0' }]}>Education</Text>
+          <View style={[styles.badge, { backgroundColor: isDark ? '#333' : '#FFF3E0' }]}>
+            <Text style={[styles.badgeText, { color: isDark ? theme.primary : '#E65100' }]}>
+              Published: {book.first_publish_year}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-        <Text style={styles.sectionTitle}>Description</Text>
-        <Text style={styles.description}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Description</Text>
+        <Text style={[styles.description, { color: theme.textSub }]}>
           This is a placeholder description because the search API endpoint doesn't always return the full text synopsis. 
           Imagine a great summary of "{book.title}" here, perfect for a UoM student doing research!
         </Text>
@@ -68,9 +66,8 @@ export default function BookDetailsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
+  container: { flex: 1 },
   imageContainer: {
-    backgroundColor: '#F5F5F5',
     height: 300,
     justifyContent: 'center',
     alignItems: 'center',
@@ -85,12 +82,12 @@ const styles = StyleSheet.create({
   },
   detailsContainer: { padding: 24 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { fontSize: 24, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 10 },
-  author: { fontSize: 16, color: colors.textLight, marginTop: 8, fontStyle: 'italic' },
+  title: { fontSize: 24, fontWeight: 'bold', flex: 1, marginRight: 10 },
+  author: { fontSize: 16, marginTop: 8, fontStyle: 'italic' },
   badgeRow: { flexDirection: 'row', marginTop: 16 },
-  badge: { backgroundColor: '#FFF3E0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4, marginRight: 8 },
-  badgeText: { fontSize: 12, color: '#E65100', fontWeight: '600' },
-  divider: { height: 1, backgroundColor: '#EEEEEE', marginVertical: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 8 },
-  description: { fontSize: 15, lineHeight: 24, color: colors.textLight },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4, marginRight: 8 },
+  badgeText: { fontSize: 12, fontWeight: '600' },
+  divider: { height: 1, marginVertical: 24 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  description: { fontSize: 15, lineHeight: 24 },
 });
