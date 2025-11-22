@@ -9,6 +9,8 @@ import MainTabs from './MainTabs';
 import BookDetailsScreen from '../screens/home/BookDetailsScreen';
 import { loadUser } from '../store/slices/authSlice';
 import { loadFavorites } from '../store/slices/favoritesSlice';
+import { loadRecentlyViewed } from '../store/slices/recentlyViewedSlice';
+import { loadNotes } from '../store/slices/notesSlice';
 import { useTheme } from '../theme/ThemeContext'; // Import Hook
 
 const Stack = createNativeStackNavigator();
@@ -23,6 +25,8 @@ export default function AppNavigator() {
   useEffect(() => {
     dispatch(loadUser());
     dispatch(loadFavorites());
+    dispatch(loadRecentlyViewed());
+    dispatch(loadNotes());
   }, [dispatch]);
 
   if (isLoading) {
