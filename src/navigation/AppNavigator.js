@@ -1,22 +1,45 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSelector, useDispatch } from 'react-redux'; 
+
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import BookDetailsScreen from '../screens/home/BookDetailsScreen';
-import { colors } from '../theme/colors';
+import { loadUser } from '../store/slices/authSlice';
+import { loadFavorites } from '../store/slices/favoritesSlice';
+import { useTheme } from '../theme/ThemeContext'; // Import Hook
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  // MOCK STATE: Change this to true to see the Home screen
-  const isLoggedIn = false; 
+  const dispatch = useDispatch();
+  const { user, isLoading } = useSelector((state) => state.auth);
+  
+  // Get Theme Data
+  const { theme, isDark } = useTheme();
+
+  useEffect(() => {
+    dispatch(loadUser());
+    dispatch(loadFavorites());
+  }, [dispatch]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  // Define Navigation Theme for React Navigation internals
+  const navigationTheme = isDark ? DarkTheme : DefaultTheme;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isLoggedIn ? (
-          // User is Logged In
+        {user ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen 
@@ -25,13 +48,13 @@ export default function AppNavigator() {
               options={{ 
                 headerShown: true, 
                 title: 'Details',
-                headerStyle: { backgroundColor: colors.primary },
-                headerTintColor: colors.white
+                // DYNAMIC HEADER STYLES
+                headerStyle: { backgroundColor: theme.primary },
+                headerTintColor: isDark ? '#000' : '#FFF' // Gold needs black text, Maroon needs white
               }} 
             />
           </>
         ) : (
-          // User is NOT Logged In
           <Stack.Screen name="Auth" component={AuthStack} />
         )}
       </Stack.Navigator>

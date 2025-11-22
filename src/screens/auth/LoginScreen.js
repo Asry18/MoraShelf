@@ -1,19 +1,120 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
-import { colors } from '../../theme/colors';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+import { loginSuccess } from '../../store/slices/authSlice';
+import { useTheme } from '../../theme/ThemeContext'; // Updated Import
+
+const LoginSchema = Yup.object().shape({
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+});
 
 export default function LoginScreen({ navigation }) {
+  const dispatch = useDispatch();
+  const { theme, isDark } = useTheme(); // Use Hook
+
+  const handleLogin = (values) => {
+    const user = {
+      name: 'Mora Student',
+      email: values.email,
+      token: 'mock-jwt-token-123'
+    };
+    dispatch(loginSuccess(user));
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Login Screen</Text>
-      <Button title="Go to Register" onPress={() => navigation.navigate('Register')} />
-      {/* Temporary button to simulate login */}
-      <Button title="Simulate Login" color={colors.primary} onPress={() => alert('Logic coming in Phase 3')} />
-    </View>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.background }]} // Dynamic Background
+    >
+      <View style={styles.formContainer}>
+        <Text style={[styles.title, { color: theme.primary }]}>MoraShelf</Text>
+        <Text style={[styles.subtitle, { color: theme.textSub }]}>Login to continue</Text>
+
+        <Formik
+          initialValues={{ email: '', password: '' }}
+          validationSchema={LoginSchema}
+          onSubmit={handleLogin}
+        >
+          {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+            <View>
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.label, { color: theme.text }]}>Email</Text>
+                <TextInput
+                  style={[styles.input, { 
+                    borderColor: theme.border, 
+                    color: theme.text,
+                    backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' // Input specific bg
+                  }]}
+                  placeholder="student@uom.lk"
+                  placeholderTextColor={theme.textSub}
+                  onChangeText={handleChange('email')}
+                  onBlur={handleBlur('email')}
+                  value={values.email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {touched.email && errors.email && <Text style={{ color: theme.error || 'red', fontSize: 12 }}>{errors.email}</Text>}
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.label, { color: theme.text }]}>Password</Text>
+                <TextInput
+                  style={[styles.input, { 
+                    borderColor: theme.border, 
+                    color: theme.text,
+                    backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' 
+                  }]}
+                  placeholder="******"
+                  placeholderTextColor={theme.textSub}
+                  onChangeText={handleChange('password')}
+                  onBlur={handleBlur('password')}
+                  value={values.password}
+                  secureTextEntry
+                />
+                {touched.password && errors.password && <Text style={{ color: theme.error || 'red', fontSize: 12 }}>{errors.password}</Text>}
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.button, { backgroundColor: theme.primary }]} 
+                onPress={handleSubmit}
+              >
+                <Text style={[styles.buttonText, { color: isDark ? '#000' : '#FFF' }]}>Login</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkButton}>
+                <Text style={[styles.linkText, { color: theme.tint }]}>Don't have an account? Register</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Formik>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 20, fontWeight: 'bold', color: colors.primary, marginBottom: 20 }
+  container: { flex: 1, justifyContent: 'center' },
+  formContainer: { padding: 24 },
+  title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
+  inputWrapper: { marginBottom: 16 },
+  label: { fontSize: 14, marginBottom: 8, fontWeight: '500' },
+  input: { 
+    borderWidth: 1, 
+    borderRadius: 8, 
+    padding: 12, 
+    fontSize: 16, 
+  },
+  button: { 
+    padding: 16, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    marginTop: 16 
+  },
+  buttonText: { fontSize: 16, fontWeight: 'bold' },
+  linkButton: { marginTop: 16, alignItems: 'center' },
+  linkText: { fontWeight: '600' }
 });
