@@ -1,22 +1,46 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+// IMPORT REDUX HOOKS
+import { useSelector, useDispatch } from 'react-redux'; 
+
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import BookDetailsScreen from '../screens/home/BookDetailsScreen';
 import { colors } from '../theme/colors';
+// IMPORT ACTIONS
+import { loadUser } from '../store/slices/authSlice';
+import { loadFavorites } from '../store/slices/favoritesSlice';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  // MOCK STATE: Change this to true to see the Home screen
-  const isLoggedIn = false; 
+  // --- NEW REDUX LOGIC STARTS HERE ---
+  const dispatch = useDispatch();
+  // Read 'user' and 'isLoading' from the auth slice
+  const { user, isLoading } = useSelector((state) => state.auth);
+
+  // Load saved data when app starts
+  useEffect(() => {
+    dispatch(loadUser());
+    dispatch(loadFavorites());
+  }, [dispatch]);
+
+  // Show spinner while checking storage
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+  // --- NEW REDUX LOGIC ENDS HERE ---
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isLoggedIn ? (
-          // User is Logged In
+        {user ? ( // Check real user state
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen 
@@ -31,7 +55,6 @@ export default function AppNavigator() {
             />
           </>
         ) : (
-          // User is NOT Logged In
           <Stack.Screen name="Auth" component={AuthStack} />
         )}
       </Stack.Navigator>
