@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useDispatch } from 'react-redux';
+import React, { useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { loginSuccess } from '../../store/slices/authSlice';
-import { useTheme } from '../../theme/ThemeContext'; // Updated Import
+import { login, clearError } from '../../store/slices/authSlice';
+import { useTheme } from '../../theme/ThemeContext';
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
@@ -13,19 +13,39 @@ const LoginSchema = Yup.object().shape({
 
 export default function LoginScreen({ navigation }) {
   const dispatch = useDispatch();
-  const { theme, isDark } = useTheme(); // Use Hook
+  const { theme, isDark } = useTheme();
+  const { isAuthenticating, error, user } = useSelector(state => state.auth);
 
-  const handleLogin = (values) => {
-    const user = {
-      name: 'Mora Student',
-      email: values.email,
-      token: 'mock-jwt-token-123'
-    };
-    dispatch(loginSuccess(user));
+  // Clear error when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  // Navigate to home when user is successfully logged in
+  useEffect(() => {
+    if (user && !isAuthenticating) {
+      // Navigation will be handled by AppNavigator based on auth state
+    }
+  }, [user, isAuthenticating]);
+
+  // Show error alert if login fails
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Login Failed', error, [{ text: 'OK' }]);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleLogin = async (values) => {
+    try {
+      await dispatch(login({ email: values.email, password: values.password })).unwrap();
+    } catch (err) {
+      // Error is handled by useEffect above
+    }
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: theme.background }]} // Dynamic Background
     >
@@ -43,8 +63,8 @@ export default function LoginScreen({ navigation }) {
               <View style={styles.inputWrapper}>
                 <Text style={[styles.label, { color: theme.text }]}>Email</Text>
                 <TextInput
-                  style={[styles.input, { 
-                    borderColor: theme.border, 
+                  style={[styles.input, {
+                    borderColor: theme.border,
                     color: theme.text,
                     backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' // Input specific bg
                   }]}
@@ -62,10 +82,10 @@ export default function LoginScreen({ navigation }) {
               <View style={styles.inputWrapper}>
                 <Text style={[styles.label, { color: theme.text }]}>Password</Text>
                 <TextInput
-                  style={[styles.input, { 
-                    borderColor: theme.border, 
+                  style={[styles.input, {
+                    borderColor: theme.border,
                     color: theme.text,
-                    backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' 
+                    backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA'
                   }]}
                   placeholder="******"
                   placeholderTextColor={theme.textSub}
@@ -77,11 +97,22 @@ export default function LoginScreen({ navigation }) {
                 {touched.password && errors.password && <Text style={{ color: theme.error || 'red', fontSize: 12 }}>{errors.password}</Text>}
               </View>
 
-              <TouchableOpacity 
-                style={[styles.button, { backgroundColor: theme.primary }]} 
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  {
+                    backgroundColor: theme.primary,
+                    opacity: isAuthenticating ? 0.6 : 1
+                  }
+                ]}
                 onPress={handleSubmit}
+                disabled={isAuthenticating}
               >
-                <Text style={[styles.buttonText, { color: isDark ? '#000' : '#FFF' }]}>Login</Text>
+                {isAuthenticating ? (
+                  <ActivityIndicator size="small" color={isDark ? '#000' : '#FFF'} />
+                ) : (
+                  <Text style={[styles.buttonText, { color: isDark ? '#000' : '#FFF' }]}>Login</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkButton}>
@@ -102,17 +133,17 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
   inputWrapper: { marginBottom: 16 },
   label: { fontSize: 14, marginBottom: 8, fontWeight: '500' },
-  input: { 
-    borderWidth: 1, 
-    borderRadius: 8, 
-    padding: 12, 
-    fontSize: 16, 
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
   },
-  button: { 
-    padding: 16, 
-    borderRadius: 8, 
-    alignItems: 'center', 
-    marginTop: 16 
+  button: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16
   },
   buttonText: { fontSize: 16, fontWeight: 'bold' },
   linkButton: { marginTop: 16, alignItems: 'center' },
