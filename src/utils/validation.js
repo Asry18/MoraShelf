@@ -1,10 +1,15 @@
 import * as Yup from 'yup';
 
-// Login validation schema
+// Login validation schema - accepts either email or username
 export const LoginSchema = Yup.object().shape({
   email: Yup.string()
-    .email('Invalid email')
-    .required('Email is required'),
+    .required('Email or username is required')
+    .test('email-or-username', 'Invalid email format', function(value) {
+      // Allow either valid email format or any non-empty string (username)
+      if (!value) return false;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(value) || value.length >= 2; // Email format OR at least 2 chars (username)
+    }),
   password: Yup.string()
     .min(6, 'Password must be at least 6 characters')
     .required('Password is required'),

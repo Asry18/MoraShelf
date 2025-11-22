@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useDispatch } from 'react-redux';
+import React, { useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { loginSuccess } from '../../store/slices/authSlice';
+import { register, clearError } from '../../store/slices/authSlice';
 import { useTheme } from '../../theme/ThemeContext';
 
 const RegisterSchema = Yup.object().shape({
@@ -18,14 +18,38 @@ const RegisterSchema = Yup.object().shape({
 export default function RegisterScreen({ navigation }) {
   const dispatch = useDispatch();
   const { theme, isDark } = useTheme();
+  const { isAuthenticating, error, user } = useSelector(state => state.auth);
 
-  const handleRegister = (values) => {
-    const user = {
-      name: values.name,
-      email: values.email,
-      token: 'mock-jwt-token-123'
-    };
-    dispatch(loginSuccess(user));
+  // Clear error when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  // Navigate to home when user is successfully registered
+  useEffect(() => {
+    if (user && !isAuthenticating) {
+      // Navigation will be handled by AppNavigator based on auth state
+    }
+  }, [user, isAuthenticating]);
+
+  // Show error alert if registration fails
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Registration Failed', error, [{ text: 'OK' }]);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleRegister = async (values) => {
+    try {
+      await dispatch(register({ 
+        name: values.name, 
+        email: values.email, 
+        password: values.password 
+      })).unwrap();
+    } catch (err) {
+      // Error is handled by useEffect above
+    }
   };
 
   return (
@@ -126,10 +150,21 @@ export default function RegisterScreen({ navigation }) {
               </View>
 
               <TouchableOpacity 
-                style={[styles.button, { backgroundColor: theme.primary }]} 
+                style={[
+                  styles.button, 
+                  { 
+                    backgroundColor: theme.primary,
+                    opacity: isAuthenticating ? 0.6 : 1
+                  }
+                ]} 
                 onPress={handleSubmit}
+                disabled={isAuthenticating}
               >
-                <Text style={[styles.buttonText, { color: isDark ? '#000' : '#FFF' }]}>Register</Text>
+                {isAuthenticating ? (
+                  <ActivityIndicator size="small" color={isDark ? '#000' : '#FFF'} />
+                ) : (
+                  <Text style={[styles.buttonText, { color: isDark ? '#000' : '#FFF' }]}>Register</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkButton}>
