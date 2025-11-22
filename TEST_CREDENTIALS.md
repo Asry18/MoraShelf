@@ -2,22 +2,31 @@
 
 ## Pre-existing Test Users (from dummyjson.com)
 
-You can use these pre-existing test users to login directly:
+You can use these pre-existing test users from [dummyjson.com/users](https://dummyjson.com/users) to login directly. **Use the EMAIL address** to login (the app will automatically find the username):
 
 ### Test User 1
-- **Email/Username:** `[email protected]`
-- **Password:** `9uQFF1Lh`
-- **Name:** Terry Medhurst
+- **Email:** `[email protected]`
+- **Username:** `emilys`
+- **Password:** `emilyspass`
+- **Name:** Emily Johnson
 
 ### Test User 2
-- **Email/Username:** `[email protected]`
-- **Password:** `0lelplR`
-- **Name:** Sheilah Medhurst
+- **Email:** `[email protected]`
+- **Username:** `michaelw`
+- **Password:** `michaelwpass`
+- **Name:** Michael Williams
 
 ### Test User 3
-- **Email/Username:** `[email protected]`
-- **Password:** `OWsTbMUgFc`
-- **Name:** Marv Loftin
+- **Email:** `[email protected]`
+- **Username:** `sophiab`
+- **Password:** `sophiabpass`
+- **Name:** Sophia Brown
+
+### Test User 4
+- **Email:** `[email protected]`
+- **Username:** `jamesd`
+- **Password:** `jamesdpass`
+- **Name:** James Davis
 
 ## How to Test
 
@@ -41,11 +50,12 @@ You can use these pre-existing test users to login directly:
 
 ## Notes
 
-- The app uses **email as username** for login
+- **For pre-existing dummyjson users:** Use the **EMAIL address** to login (the app automatically finds the username)
+- **For newly registered users:** Use the email you registered with
 - Password must be at least 6 characters
 - After successful registration, you'll be automatically logged in
 - **Newly registered users are stored locally** - you can login with the same credentials you registered with
-- **Pre-existing dummyjson users** can login via API
+- **Pre-existing dummyjson users** can login via API (the app looks up their username by email)
 - User's name will appear in the HomeScreen greeting: "Hello, {Name} 👋"
 - Authentication state is persisted, so you'll stay logged in after closing the app
 
@@ -66,8 +76,15 @@ If login fails:
 ## How It Works
 
 The app uses a hybrid authentication approach:
-1. **Pre-existing users** (from dummyjson.com database) can login via API
+1. **Pre-existing users** (from [dummyjson.com/users](https://dummyjson.com/users)) can login via API
+   - The app accepts email addresses for login
+   - It automatically looks up the username by email from dummyjson
+   - Then uses that username to authenticate via `/auth/login` endpoint
 2. **Newly registered users** are stored locally and can login with their registered credentials
-3. When you login, the app first tries the API, then checks local storage if API fails
+3. **Login flow:**
+   - First tries to login with email as username (for newly registered users)
+   - If that fails, searches dummyjson users by email to find the actual username
+   - Then tries to login with the found username
+   - If API login fails, checks local storage for newly registered users
 4. This ensures both pre-existing and newly registered users can authenticate successfully
 

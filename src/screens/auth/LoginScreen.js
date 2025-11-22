@@ -2,14 +2,9 @@ import React, { useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik } from 'formik';
-import * as Yup from 'yup';
 import { login, clearError } from '../../store/slices/authSlice';
 import { useTheme } from '../../theme/ThemeContext';
-
-const LoginSchema = Yup.object().shape({
-  email: Yup.string().email('Invalid email').required('Email is required'),
-  password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-});
+import { LoginSchema } from '../../utils/validation';
 
 export default function LoginScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -61,20 +56,20 @@ export default function LoginScreen({ navigation }) {
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <View>
               <View style={styles.inputWrapper}>
-                <Text style={[styles.label, { color: theme.text }]}>Email</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Email or Username</Text>
                 <TextInput
                   style={[styles.input, {
                     borderColor: theme.border,
                     color: theme.text,
                     backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' // Input specific bg
                   }]}
-                  placeholder="student@uom.lk"
+                  placeholder="email@example.com or username"
                   placeholderTextColor={theme.textSub}
                   onChangeText={handleChange('email')}
                   onBlur={handleBlur('email')}
                   value={values.email}
-                  keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
                 />
                 {touched.email && errors.email && <Text style={{ color: theme.error || 'red', fontSize: 12 }}>{errors.email}</Text>}
               </View>

@@ -76,75 +76,183 @@ const saveRegisteredUser = async (email, userData) => {
   }
 };
 
-// Authentication API functions using dummyjson.com
-export const loginUser = async (email, password) => {
+// Helper function to find user by email in dummyjson users
+const findUserByEmail = async (email) => {
   try {
-    // First, try to login via dummyjson API (for pre-existing users)
+    // Try search endpoint first
+    try {
+      const searchResponse = await authApi.get('/users/search', {
+        params: {
+          q: email,
+        },
+      });
+
+      if (searchResponse.data && searchResponse.data.users && searchResponse.data.users.length > 0) {
+        // Find exact email match (case insensitive)
+        const user = searchResponse.data.users.find(
+          u => u.email && u.email.toLowerCase() === email.toLowerCase()
+        );
+        if (user) return user;
+      }
+    } catch (searchError) {
+      // Search endpoint might not work, try filter endpoint
+      try {
+        const filterResponse = await authApi.get('/users/filter', {
+          params: {
+            key: 'email',
+            value: email,
+          },
+        });
+
+        if (filterResponse.data && filterResponse.data.users && filterResponse.data.users.length > 0) {
+          const user = filterResponse.data.users.find(
+            u => u.email && u.email.toLowerCase() === email.toLowerCase()
+          );
+          if (user) return user;
+        }
+      } catch (filterError) {
+        // Filter also failed, try fetching users and searching
+        // Fetch a reasonable number of users (limit to 100 for performance)
+        const usersResponse = await authApi.get('/users', {
+          params: {
+            limit: 100,
+          },
+        });
+
+        if (usersResponse.data && usersResponse.data.users) {
+          const user = usersResponse.data.users.find(
+            u => u.email && u.email.toLowerCase() === email.toLowerCase()
+          );
+          if (user) return user;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error searching for user by email:', error);
+    return null;
+  }
+};
+
+// Helper function to check if input looks like an email
+const isEmail = (input) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+};
+
+// Authentication API functions using dummyjson.com
+// Accepts either email or username
+export const loginUser = async (emailOrUsername, password) => {
+  try {
+    // STEP 1: First check local registered users by email
+    const registeredUsers = await getRegisteredUsers();
+    const userKey = emailOrUsername.toLowerCase();
+
+    if (registeredUsers[userKey]) {
+      const localUser = registeredUsers[userKey];
+      // Verify password matches
+      if (localUser.password === password) {
+        return {
+          id: localUser.id,
+          name: localUser.name,
+          email: localUser.email,
+          username: localUser.username || localUser.email,
+          token: localUser.token,
+        };
+      } else {
+        // Password doesn't match for local user
+        throw new Error('Invalid email/username or password');
+      }
+    }
+
+    // STEP 2: If not found locally, try dummyjson API with input as username
     try {
       const response = await authApi.post('/auth/login', {
-        username: email, // Using email as username
+        username: emailOrUsername, // Try input as username
         password: password,
       });
 
-      if (response.data && response.data.token) {
+      if (response.data && (response.data.accessToken || response.data.token)) {
+        // Construct name from firstName and lastName (handle missing lastName)
+        const firstName = response.data.firstName || '';
+        const lastName = response.data.lastName || '';
+        const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+
         // Transform the response to match our app's user structure
         return {
           id: response.data.id,
-          name: response.data.firstName + ' ' + response.data.lastName,
-          email: email, // Use the email provided
+          name: fullName,
+          email: response.data.email || (isEmail(emailOrUsername) ? emailOrUsername : ''),
           username: response.data.username,
-          token: response.data.token,
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          gender: response.data.gender,
+          image: response.data.image,
+          accessToken: response.data.accessToken || response.data.token,
+          refreshToken: response.data.refreshToken,
+          token: response.data.accessToken || response.data.token, // Keep for backward compatibility
         };
       }
     } catch (apiError) {
-      // If API login fails, check local storage for registered users
-      const registeredUsers = await getRegisteredUsers();
-      const userKey = email.toLowerCase();
-      
-      if (registeredUsers[userKey]) {
-        const localUser = registeredUsers[userKey];
-        // Verify password matches
-        if (localUser.password === password) {
-          return {
-            id: localUser.id,
-            name: localUser.name,
-            email: localUser.email,
-            username: localUser.username || localUser.email,
-            token: localUser.token,
-          };
+      // STEP 3: If login with input as username fails, and input looks like an email,
+      // try to find the user by email in dummyjson and login with their actual username
+      if (apiError.response && (apiError.response.status === 400 || apiError.response.status === 401)) {
+        if (isEmail(emailOrUsername)) {
+          try {
+            // Find user by email to get their username
+            const user = await findUserByEmail(emailOrUsername);
+
+            if (user && user.username) {
+              // Try login with the actual username
+              const loginResponse = await authApi.post('/auth/login', {
+                username: user.username,
+                password: password,
+              });
+
+              if (loginResponse.data && (loginResponse.data.accessToken || loginResponse.data.token)) {
+                // Construct name from firstName and lastName (handle missing lastName)
+                const firstName = loginResponse.data.firstName || user.firstName || '';
+                const lastName = loginResponse.data.lastName || user.lastName || '';
+                const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+
+                return {
+                  id: loginResponse.data.id || user.id,
+                  name: fullName,
+                  email: loginResponse.data.email || user.email || emailOrUsername,
+                  username: loginResponse.data.username || user.username,
+                  firstName: loginResponse.data.firstName || user.firstName,
+                  lastName: loginResponse.data.lastName || user.lastName,
+                  gender: loginResponse.data.gender || user.gender,
+                  image: loginResponse.data.image || user.image,
+                  accessToken: loginResponse.data.accessToken || loginResponse.data.token,
+                  refreshToken: loginResponse.data.refreshToken,
+                  token: loginResponse.data.accessToken || loginResponse.data.token, // Keep for backward compatibility
+                };
+              }
+            }
+          } catch (usernameLoginError) {
+            // If username login also fails, throw error
+            console.log('Username-based login failed');
+          }
         }
       }
-      
-      // If not found in local storage either, throw the original API error
+
+      // If all attempts failed, throw the error
       throw apiError;
     }
-    
+
     throw new Error('Invalid response from server');
   } catch (error) {
+    if (error.message === 'Invalid email or password' || error.message === 'Invalid email or username') {
+      throw error;
+    }
     if (error.response) {
       // Server responded with error status
       if (error.response.status === 400 || error.response.status === 401) {
-        throw new Error('Invalid email or password');
+        throw new Error('Invalid email/username or password');
       }
       throw new Error(error.response.data?.message || 'Login failed. Please try again.');
     } else if (error.request) {
-      // Request was made but no response received - check local storage
-      const registeredUsers = await getRegisteredUsers();
-      const userKey = email.toLowerCase();
-      
-      if (registeredUsers[userKey]) {
-        const localUser = registeredUsers[userKey];
-        if (localUser.password === password) {
-          return {
-            id: localUser.id,
-            name: localUser.name,
-            email: localUser.email,
-            username: localUser.username || localUser.email,
-            token: localUser.token,
-          };
-        }
-      }
-      
+      // Request was made but no response received
       throw new Error('Network error. Please check your connection.');
     } else {
       // Error in setting up the request
@@ -158,7 +266,7 @@ export const registerUser = async (name, email, password) => {
     // Check if user already exists in local storage
     const registeredUsers = await getRegisteredUsers();
     const userKey = email.toLowerCase();
-    
+
     if (registeredUsers[userKey]) {
       throw new Error('Email already exists');
     }
@@ -178,7 +286,7 @@ export const registerUser = async (name, email, password) => {
         username: email, // Use email as username
         password: password,
       });
-      
+
       if (response.data && response.data.id) {
         userId = response.data.id;
       }
@@ -229,9 +337,9 @@ export const registerUser = async (name, email, password) => {
         password: password,
         token: `mock-token-${userId}-${Date.now()}`,
       };
-      
+
       await saveRegisteredUser(email, user);
-      
+
       return {
         id: user.id,
         name: user.name,
