@@ -56,6 +56,69 @@ const FeatureCard = ({ icon, title, description, theme, isDark, delay }) => {
   );
 };
 
+const ReviewCard = ({ name, role, review, rating, theme, isDark, delay }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        delay: delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        delay: delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.reviewCard,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={isDark ? ['#2a2a3e', '#1f1f2e'] : ['#ffffff', '#f8f9fa']}
+        style={styles.reviewCardGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.reviewHeader}>
+          <View style={[styles.avatarCircle, { backgroundColor: theme.primary + '20' }]}>
+            <Text style={styles.avatarText}>{name.charAt(0)}</Text>
+          </View>
+          <View style={styles.reviewerInfo}>
+            <Text style={[styles.reviewerName, { color: theme.text }]}>{name}</Text>
+            <Text style={[styles.reviewerRole, { color: theme.textSub }]}>{role}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.ratingContainer}>
+          {[...Array(5)].map((_, index) => (
+            <Text key={index} style={styles.star}>
+              {index < rating ? '⭐' : '☆'}
+            </Text>
+          ))}
+        </View>
+        
+        <Text style={[styles.reviewText, { color: theme.text }]}>
+          "{review}"
+        </Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+};
+
 const FloatingBook = ({ color, delay, duration, startY }) => {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -134,6 +197,33 @@ export default function LandingScreen({ navigation }) {
     ]).start();
   }, []);
 
+  const reviews = [
+    {
+      name: "Sarah Johnson",
+      role: "Book Enthusiast",
+      review: "MoraShelf has completely transformed how I organize my reading list. The interface is beautiful and so easy to use!",
+      rating: 5
+    },
+    {
+      name: "Michael Chen",
+      role: "Student",
+      review: "As a student, I love being able to take notes on books directly in the app. It's made my research so much easier.",
+      rating: 5
+    },
+    {
+      name: "Emily Rodriguez",
+      role: "Librarian",
+      review: "The vast collection of books available is impressive. I've discovered so many amazing reads I wouldn't have found otherwise.",
+      rating: 5
+    },
+    {
+      name: "David Kumar",
+      role: "Avid Reader",
+      review: "The dark mode is perfect for late-night reading sessions. This app really understands what readers need!",
+      rating: 4
+    }
+  ];
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: theme.background }]}
@@ -187,6 +277,50 @@ export default function LandingScreen({ navigation }) {
           <FloatingBook color="#FF6B6B" delay={400} duration={1800} startY={-5} />
           <FloatingBook color="#4ECDC4" delay={100} duration={2100} startY={8} />
         </View>
+
+        {/* CTA Buttons in Hero */}
+        <Animated.View
+          style={[
+            styles.heroCtaSection,
+            {
+              opacity: buttonAnim,
+              transform: [
+                {
+                  translateY: buttonAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [30, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.heroPrimaryButton}
+            onPress={() => navigation.navigate('Register')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.heroButtonContent}>
+              <Text style={styles.heroPrimaryButtonText}>
+                Get Started Free →
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.heroSecondaryButton}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.heroSecondaryButtonText}>
+              Sign In
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.heroFooterText}>
+            ✨ Join thousands of readers worldwide
+          </Text>
+        </Animated.View>
 
         {/* Wave Decoration */}
         <View style={styles.waveContainer}>
@@ -258,23 +392,91 @@ export default function LandingScreen({ navigation }) {
         </View>
       </View>
 
-      {/* CTA Buttons */}
-      <Animated.View
-        style={[
-          styles.ctaSection,
-          {
-            opacity: buttonAnim,
-            transform: [
-              {
-                translateY: buttonAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [30, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
+      {/* Reviews Section */}
+      <View style={styles.reviewsSection}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          What Our Readers Say
+        </Text>
+        <Text style={[styles.sectionSubtitle, { color: theme.textSub }]}>
+          Join thousands of satisfied book lovers
+        </Text>
+
+        {reviews.map((review, index) => (
+          <ReviewCard
+            key={index}
+            name={review.name}
+            role={review.role}
+            review={review.review}
+            rating={review.rating}
+            theme={theme}
+            isDark={isDark}
+            delay={index * 100}
+          />
+        ))}
+
+        {/* Overall Rating Summary */}
+        <View style={[styles.ratingSummary, { 
+          backgroundColor: isDark ? '#2a2a3e' : '#ffffff',
+          borderColor: theme.border 
+        }]}>
+          <View style={styles.ratingLeft}>
+            <Text style={[styles.ratingBigNumber, { color: theme.primary }]}>4.8</Text>
+            <View style={styles.ratingStars}>
+              <Text style={styles.star}>⭐⭐⭐⭐⭐</Text>
+            </View>
+            <Text style={[styles.ratingCount, { color: theme.textSub }]}>
+              Based on 2,500+ reviews
+            </Text>
+          </View>
+          <View style={styles.ratingRight}>
+            <View style={styles.ratingBar}>
+              <Text style={[styles.ratingLabel, { color: theme.text }]}>5★</Text>
+              <View style={[styles.ratingBarBg, { backgroundColor: theme.border }]}>
+                <View style={[styles.ratingBarFill, { backgroundColor: theme.primary, width: '85%' }]} />
+              </View>
+              <Text style={[styles.ratingPercent, { color: theme.textSub }]}>85%</Text>
+            </View>
+            <View style={styles.ratingBar}>
+              <Text style={[styles.ratingLabel, { color: theme.text }]}>4★</Text>
+              <View style={[styles.ratingBarBg, { backgroundColor: theme.border }]}>
+                <View style={[styles.ratingBarFill, { backgroundColor: theme.primary, width: '12%' }]} />
+              </View>
+              <Text style={[styles.ratingPercent, { color: theme.textSub }]}>12%</Text>
+            </View>
+            <View style={styles.ratingBar}>
+              <Text style={[styles.ratingLabel, { color: theme.text }]}>3★</Text>
+              <View style={[styles.ratingBarBg, { backgroundColor: theme.border }]}>
+                <View style={[styles.ratingBarFill, { backgroundColor: theme.primary, width: '2%' }]} />
+              </View>
+              <Text style={[styles.ratingPercent, { color: theme.textSub }]}>2%</Text>
+            </View>
+            <View style={styles.ratingBar}>
+              <Text style={[styles.ratingLabel, { color: theme.text }]}>2★</Text>
+              <View style={[styles.ratingBarBg, { backgroundColor: theme.border }]}>
+                <View style={[styles.ratingBarFill, { backgroundColor: theme.primary, width: '1%' }]} />
+              </View>
+              <Text style={[styles.ratingPercent, { color: theme.textSub }]}>1%</Text>
+            </View>
+            <View style={styles.ratingBar}>
+              <Text style={[styles.ratingLabel, { color: theme.text }]}>1★</Text>
+              <View style={[styles.ratingBarBg, { backgroundColor: theme.border }]}>
+                <View style={[styles.ratingBarFill, { backgroundColor: theme.primary, width: '0%' }]} />
+              </View>
+              <Text style={[styles.ratingPercent, { color: theme.textSub }]}>0%</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Bottom CTA Section */}
+      <View style={styles.bottomCtaSection}>
+        <Text style={[styles.bottomCtaTitle, { color: theme.text }]}>
+          Ready to Start Your Reading Journey?
+        </Text>
+        <Text style={[styles.bottomCtaSubtitle, { color: theme.textSub }]}>
+          Create your free account today
+        </Text>
+
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => navigation.navigate('Register')}
@@ -304,11 +506,7 @@ export default function LandingScreen({ navigation }) {
             Sign In
           </Text>
         </TouchableOpacity>
-
-        <Text style={[styles.footerText, { color: theme.textSub }]}>
-          ✨ Join thousands of readers worldwide
-        </Text>
-      </Animated.View>
+      </View>
     </ScrollView>
   );
 }
@@ -322,10 +520,10 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     paddingTop: 60,
-    paddingBottom: 60,
+    paddingBottom: 80,
     paddingHorizontal: 24,
     alignItems: 'center',
-    minHeight: height * 0.55,
+    minHeight: height * 0.75,
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
@@ -407,6 +605,53 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 10,
+  },
+  heroCtaSection: {
+    marginTop: 40,
+    width: '100%',
+    maxWidth: 400,
+    zIndex: 1,
+  },
+  heroPrimaryButton: {
+    borderRadius: 16,
+    marginBottom: 16,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  heroButtonContent: {
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  heroPrimaryButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#7B2CBF',
+    letterSpacing: 0.5,
+  },
+  heroSecondaryButton: {
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 24,
+  },
+  heroSecondaryButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#FFF',
+  },
+  heroFooterText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   waveContainer: {
     position: 'absolute',
@@ -507,10 +752,137 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     opacity: 0.3,
   },
-  ctaSection: {
+  reviewsSection: {
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 48,
+  },
+  reviewCard: {
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  reviewCardGradient: {
+    padding: 20,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatarCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#7B2CBF',
+  },
+  reviewerInfo: {
+    flex: 1,
+  },
+  reviewerName: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  reviewerRole: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  star: {
+    fontSize: 16,
+    marginRight: 2,
+  },
+  reviewText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  ratingSummary: {
+    marginTop: 32,
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  ratingLeft: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  ratingBigNumber: {
+    fontSize: 56,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  ratingStars: {
+    marginBottom: 8,
+  },
+  ratingCount: {
+    fontSize: 14,
+  },
+  ratingRight: {
+    flex: 1,
+  },
+  ratingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ratingLabel: {
+    width: 32,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  ratingBarBg: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+  },
+  ratingBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  ratingPercent: {
+    width: 40,
+    fontSize: 13,
+    textAlign: 'right',
+  },
+  bottomCtaSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 40,
     paddingBottom: 48,
+    alignItems: 'center',
+  },
+  bottomCtaTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  bottomCtaSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 32,
   },
   primaryButton: {
     borderRadius: 16,
@@ -521,6 +893,8 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
     overflow: 'hidden',
+    width: '100%',
+    maxWidth: 400,
   },
   buttonGradient: {
     paddingVertical: 18,
@@ -537,15 +911,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     borderWidth: 2,
-    marginBottom: 24,
+    width: '100%',
+    maxWidth: 400,
   },
   secondaryButtonText: {
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,
-  },
-  footerText: {
-    textAlign: 'center',
-    fontSize: 14,
   },
 });
