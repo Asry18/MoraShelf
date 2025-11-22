@@ -44,6 +44,13 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: theme.background }]} // Dynamic Background
     >
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.navigate('Landing')}
+      >
+        <Text style={[styles.backButtonText, { color: theme.primary }]}>← Back</Text>
+      </TouchableOpacity>
+      
       <View style={styles.formContainer}>
         <Text style={[styles.title, { color: theme.primary }]}>MoraShelf</Text>
         <Text style={[styles.subtitle, { color: theme.textSub }]}>Login to continue</Text>
@@ -123,6 +130,17 @@ export default function LoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center' },
+  backButton: { 
+    position: 'absolute', 
+    top: 50, 
+    left: 20, 
+    zIndex: 10,
+    padding: 8,
+  },
+  backButtonText: { 
+    fontSize: 16, 
+    fontWeight: '600' 
+  },
   formContainer: { padding: 24 },
   title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
