@@ -7,6 +7,7 @@ import * as Yup from 'yup';
 import { register, clearError } from '../../store/slices/authSlice';
 import { useTheme } from '../../theme/ThemeContext';
 import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import ThemeToggle from '../../components/common/ThemeToggle';
 
 
 const RegisterSchema = Yup.object().shape({
@@ -89,6 +90,13 @@ export default function RegisterScreen({ navigation }) {
       <View style={styles.backgroundDecorations}>
         <View style={[styles.circle, styles.circle1, { backgroundColor: theme.primary, opacity: 0.05 }]} />
         <View style={[styles.circle, styles.circle2, { backgroundColor: theme.primary, opacity: 0.08 }]} />
+      </View>
+
+      {/* Theme Toggle */}
+      <View style={[styles.themeToggleContainer, { 
+        backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' 
+      }]}>
+        <ThemeToggle style={styles.themeToggle} />
       </View>
 
       {/* Back Button */}
@@ -350,6 +358,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 40,
+  },
+  themeToggleContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  themeToggle: {
+    padding: 8,
   },
   backButton: { 
     position: 'absolute', 

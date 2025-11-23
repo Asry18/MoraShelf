@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeContext';
+import ThemeToggle from '../../components/common/ThemeToggle';
 
 const { width, height } = Dimensions.get('window');
 
@@ -178,7 +179,7 @@ const FloatingBook = ({ color, delay, duration, startY }) => {
 };
 
 export default function LandingScreen({ navigation }) {
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme();
   const headerAnim = useRef(new Animated.Value(0)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
 
@@ -225,13 +226,14 @@ export default function LandingScreen({ navigation }) {
   ];
 
   return (
-    <ScrollView 
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Hero Section */}
-      <LinearGradient
+    <View style={{ flex: 1 }}>
+      <ScrollView 
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Section */}
+        <LinearGradient
         colors={isDark 
           ? ['#1a1a2e', '#16213e', '#0f3460'] 
           : [theme.primary, '#8B5FBF', '#6B46C1']
@@ -508,6 +510,18 @@ export default function LandingScreen({ navigation }) {
         </TouchableOpacity>
       </View>
     </ScrollView>
+
+    {/* Floating Theme Toggle */}
+    <TouchableOpacity 
+      style={[styles.floatingThemeToggle, { 
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)' 
+      }]}
+      onPress={toggleTheme}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.floatingIcon}>{isDark ? '☀️' : '🌙'}</Text>
+    </TouchableOpacity>
+  </View>
   );
 }
 
@@ -517,6 +531,26 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  floatingThemeToggle: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1000,
+  },
+  floatingIcon: {
+    fontSize: 20,
+    opacity: 0.7,
   },
   heroSection: {
     paddingTop: 60,
