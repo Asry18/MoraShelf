@@ -1,10 +1,63 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TextInput, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useSelector } from 'react-redux';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { searchBooks } from '../../services/api';
 import BookCard from '../../components/specific/BookCard';
+
+// Memoized Search Bar Component to prevent re-renders
+const SearchBar = memo(({ 
+  searchQuery, 
+  onChangeText, 
+  onSearch, 
+  onClear,
+  theme,
+  isDark 
+}) => {
+  return (
+    <View style={[styles.searchContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <Feather name="search" size={20} color={theme.textSub} style={styles.searchIcon} />
+      <TextInput 
+        style={[styles.searchInput, { color: theme.text }]}
+        placeholder="Search books..."
+        placeholderTextColor={theme.textSub}
+        value={searchQuery}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSearch}
+        returnKeyType="search"
+        autoCorrect={false}
+        autoCapitalize="none"
+      />
+      {searchQuery.length > 0 ? (
+        <TouchableOpacity 
+          onPress={onClear}
+          style={styles.clearButton}
+        >
+          <Feather name="x" size={18} color={theme.textSub} />
+        </TouchableOpacity>
+      ) : null}
+      <TouchableOpacity 
+        onPress={onSearch}
+        style={[styles.searchButton, { backgroundColor: theme.primary }]}
+        activeOpacity={0.7}
+      >
+        <Feather name="search" size={18} color={isDark ? '#000' : '#FFF'} />
+      </TouchableOpacity>
+    </View>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison function - only re-render if these actually change
+  return (
+    prevProps.searchQuery === nextProps.searchQuery &&
+    prevProps.isDark === nextProps.isDark &&
+    prevProps.theme.surface === nextProps.theme.surface &&
+    prevProps.theme.border === nextProps.theme.border &&
+    prevProps.theme.text === nextProps.theme.text &&
+    prevProps.theme.textSub === nextProps.theme.textSub &&
+    prevProps.theme.primary === nextProps.theme.primary
+  );
+});
 
 export default function HomeScreen({ navigation }) {
   const user = useSelector(state => state.auth.user);
@@ -27,7 +80,7 @@ export default function HomeScreen({ navigation }) {
     { id: 'business', label: 'Business', icon: 'briefcase' },
   ];
 
-  const fetchBooks = async (query, showError = true) => {
+  const fetchBooks = useCallback(async (query, showError = true) => {
     try {
       setError(null);
       const data = await searchBooks(query);
@@ -45,43 +98,46 @@ export default function HomeScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
-  // Debounced search function
-  const handleSearchChange = (text) => {
+  // Handle search input change (no automatic search) - stable reference
+  const handleSearchChange = useCallback((text) => {
     setSearchQuery(text);
     setSelectedCategory(null); // Clear category when user types
-    
-    // Clear existing timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    
-    // Set new timer for debounced search
-    debounceTimer.current = setTimeout(() => {
-      if (text.trim().length >= 2) {
-        setLoading(true);
-        fetchBooks(text.trim());
-      } else if (text.trim().length === 0) {
-        // Reset to default search if empty
-        setSelectedCategory('computer science');
-        setLoading(true);
-        fetchBooks('computer science');
-      }
-    }, 500); // 500ms delay
-  };
+  }, []);
 
-  const handleCategorySelect = (category) => {
+  // Handle search button press - stable reference
+  const handleSearch = useCallback(() => {
+    if (searchQuery.trim().length >= 2) {
+      setLoading(true);
+      fetchBooks(searchQuery.trim());
+    } else if (searchQuery.trim().length === 0) {
+      // Reset to default search if empty
+      setSelectedCategory('computer science');
+      setLoading(true);
+      fetchBooks('computer science');
+    }
+  }, [searchQuery, fetchBooks]);
+
+  // Handle clear search - stable reference
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setSelectedCategory('computer science');
+    setLoading(true);
+    fetchBooks('computer science');
+  }, [fetchBooks]);
+
+  const handleCategorySelect = useCallback((category) => {
     setSelectedCategory(category.id);
     setSearchQuery(category.id);
     setLoading(true);
     fetchBooks(category.id);
-  };
+  }, [fetchBooks]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchBooks(searchQuery, false);
-  }, [searchQuery]);
+  }, [searchQuery, fetchBooks]);
 
   useEffect(() => {
     fetchBooks(searchQuery);
@@ -94,7 +150,7 @@ export default function HomeScreen({ navigation }) {
     };
   }, []);
 
-  const renderRecentlyViewed = () => {
+  const renderRecentlyViewed = useCallback(() => {
     if (recentlyViewed.length === 0) return null;
     
     return (
@@ -120,61 +176,11 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
     );
-  };
+  }, [recentlyViewed, theme, navigation]);
 
+  // Render header component - only categories and recently viewed
   const renderHeader = () => (
-    <View style={[styles.header, { backgroundColor: theme.background }]}>
-      <View style={styles.headerTop}>
-        <View style={styles.greetingContainer}>
-          <Text style={[styles.greeting, { color: theme.text }]}>Hello, {user?.name || 'Student'} 👋</Text>
-          <Text style={[styles.subGreeting, { color: theme.textSub }]}>What are you learning today?</Text>
-        </View>
-        <TouchableOpacity 
-          onPress={toggleTheme} 
-          style={[styles.themeToggle, { backgroundColor: theme.surface, borderColor: theme.border }]}
-        >
-          <Feather name={isDark ? 'sun' : 'moon'} size={20} color={theme.primary} />
-        </TouchableOpacity>
-      </View>
-      
-      {/* Search Bar */}
-      <View style={[styles.searchContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        <Feather name="search" size={20} color={theme.textSub} style={styles.searchIcon} />
-        <TextInput 
-          style={[styles.searchInput, { color: theme.text }]}
-          placeholder="Search books..."
-          placeholderTextColor={theme.textSub}
-          value={searchQuery}
-          onChangeText={handleSearchChange}
-          onSubmitEditing={() => {
-            if (searchQuery.trim().length >= 2) {
-              setLoading(true);
-              fetchBooks(searchQuery.trim());
-            }
-          }}
-          returnKeyType="search"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity 
-            onPress={() => {
-              setSearchQuery('');
-              setLoading(true);
-              fetchBooks('computer science');
-            }}
-            style={styles.clearButton}
-          >
-            <Feather name="x" size={18} color={theme.textSub} />
-          </TouchableOpacity>
-        )}
-      </View>
-      
-      {error && (
-        <View style={[styles.errorContainer, { backgroundColor: theme.error + '20', borderColor: theme.error }]}>
-          <Feather name="alert-circle" size={16} color={theme.error} />
-          <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-        </View>
-      )}
-      
+    <View style={styles.listHeader}>
       {/* Categories */}
       <View style={styles.categoriesContainer}>
         <Text style={[styles.categoriesTitle, { color: theme.text }]}>Popular Categories</Text>
@@ -193,10 +199,10 @@ export default function HomeScreen({ navigation }) {
                 ]}
                 onPress={() => handleCategorySelect(category)}
               >
-                <Feather 
-                  name={category.icon} 
-                  size={14} 
-                  color={isSelected ? theme.white : theme.textSub} 
+                <Feather
+                  name={category.icon}
+                  size={14}
+                  color={isSelected ? theme.white : theme.textSub}
                   style={styles.categoryIcon}
                 />
                 <Text
@@ -212,13 +218,13 @@ export default function HomeScreen({ navigation }) {
           })}
         </View>
       </View>
-      
+
       {/* Recently Viewed Section */}
       {renderRecentlyViewed()}
     </View>
   );
 
-  const renderEmptyState = () => {
+  const renderEmptyState = useCallback(() => {
     if (loading) return null;
     
     return (
@@ -230,10 +236,42 @@ export default function HomeScreen({ navigation }) {
         </Text>
       </View>
     );
-  };
+  }, [loading, theme, error]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Fixed Search Bar - Outside of FlatList to prevent focus loss */}
+      <View style={[styles.fixedSearchContainer, { backgroundColor: theme.background }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.greetingContainer}>
+            <Text style={[styles.greeting, { color: theme.text }]}>Hello, {user?.name || 'Student'} 👋</Text>
+            <Text style={[styles.subGreeting, { color: theme.textSub }]}>What are you learning today?</Text>
+          </View>
+          <TouchableOpacity
+            onPress={toggleTheme}
+            style={[styles.themeToggle, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          >
+            <Feather name={isDark ? 'sun' : 'moon'} size={20} color={theme.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <SearchBar
+          searchQuery={searchQuery}
+          onChangeText={handleSearchChange}
+          onSearch={handleSearch}
+          onClear={handleClearSearch}
+          theme={theme}
+          isDark={isDark}
+        />
+
+        {error && (
+          <View style={[styles.errorContainer, { backgroundColor: theme.error + '20', borderColor: theme.error }]}>
+            <Feather name="alert-circle" size={16} color={theme.error} />
+            <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+          </View>
+        )}
+      </View>
+
       {loading && !refreshing ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -244,16 +282,16 @@ export default function HomeScreen({ navigation }) {
           data={books}
           keyExtractor={(item) => item.key}
           renderItem={({ item }) => (
-            <BookCard 
-              book={item} 
-              onPress={() => navigation.navigate('BookDetails', { book: item })} 
+            <BookCard
+              book={item}
+              onPress={() => navigation.navigate('BookDetails', { book: item })}
             />
           )}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmptyState}
           contentContainerStyle={
-            books.length === 0 
-              ? styles.emptyListContent 
+            books.length === 0
+              ? styles.emptyListContent
               : styles.listContent
           }
           showsVerticalScrollIndicator={true}
@@ -289,6 +327,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16 
   },
   header: { marginBottom: 20, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  fixedSearchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  listHeader: {
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8
+  },
   headerTop: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -318,7 +369,15 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 16 },
   clearButton: {
     padding: 4,
-    marginLeft: 8
+    marginLeft: 4,
+    marginRight: 4
+  },
+  searchButton: {
+    padding: 10,
+    borderRadius: 8,
+    marginLeft: 4,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   errorContainer: {
     flexDirection: 'row',
