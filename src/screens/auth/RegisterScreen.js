@@ -6,6 +6,8 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { register, clearError } from '../../store/slices/authSlice';
 import { useTheme } from '../../theme/ThemeContext';
+import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
+
 
 const RegisterSchema = Yup.object().shape({
   name: Yup.string().min(2, 'Name must be at least 2 characters').required('Name is required'),
@@ -122,7 +124,7 @@ export default function RegisterScreen({ navigation }) {
           {/* Header with Icon */}
           <View style={styles.header}>
             <View style={[styles.iconContainer, { backgroundColor: theme.primary + '20' }]}>
-              <Text style={styles.icon}>✨</Text>
+              <Feather name="user-plus" size={24} color="black" />
             </View>
             <Text style={[styles.title, { color: theme.primary }]}>Create Account</Text>
             <Text style={[styles.subtitle, { color: theme.textSub }]}>
