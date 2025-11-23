@@ -42,7 +42,47 @@ export const searchBooks = async (query, limit = 20) => {
   }
 };
 
-// Helper to get high-res cover image
+export const getRecommendations = async (authors, excludeKeys = [], limit = 10) => {
+  try {
+    const recommendations = [];
+    const seenKeys = new Set(excludeKeys);
+
+    // For each author, search for books by that author
+    for (const author of authors.slice(0, 5)) { // Limit to first 5 authors to avoid too many calls
+      try {
+        const response = await api.get(`/search.json`, {
+          params: {
+            q: `author:"${author}"`,
+            limit: 5, // Get 5 books per author
+          }
+        });
+
+        if (response.data && response.data.docs) {
+          for (const doc of response.data.docs) {
+            if (!seenKeys.has(doc.key) && recommendations.length < limit) {
+              recommendations.push({
+                key: doc.key,
+                title: doc.title,
+                author_name: doc.author_name,
+                cover_i: doc.cover_i,
+                first_publish_year: doc.first_publish_year,
+              });
+              seenKeys.add(doc.key);
+            }
+          }
+        }
+      } catch (authorError) {
+        console.warn(`Failed to get recommendations for author ${author}:`, authorError.message);
+        // Continue with next author
+      }
+    }
+
+    return recommendations;
+  } catch (error) {
+    console.error('Recommendations API Error:', error);
+    throw error;
+  }
+};
 export const getCoverUrl = (coverId, size = 'M') => {
   if (coverId) {
     return `https://covers.openlibrary.org/b/id/${coverId}-${size}.jpg`;
