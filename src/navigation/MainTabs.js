@@ -31,7 +31,7 @@ export default function MainTabs() {
             iconName = 'home';
           } else if (route.name === 'Favorites') {
             iconName = 'heart';
-          } else if (route.name === 'Recommendations') {
+          } else if (route.name === 'For You') {
             iconName = 'star';
           } else if (route.name === 'Profile') {
             iconName = 'user';
@@ -42,8 +42,8 @@ export default function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'MoraShelf' }} />
-      <Tab.Screen name="Recommendations" component={RecommendationsScreen} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
+      <Tab.Screen name="For You" component={RecommendationsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
