@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons'; // Expo's version of feather-icons
 import HomeScreen from '../screens/home/HomeScreen';
 import FavoritesScreen from '../screens/profile/FavoritesScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import RecommendationsScreen from '../screens/recommendations/RecommendationsScreen';
 import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createBottomTabNavigator();
@@ -30,6 +31,8 @@ export default function MainTabs() {
             iconName = 'home';
           } else if (route.name === 'Favorites') {
             iconName = 'heart';
+          } else if (route.name === 'For You') {
+            iconName = 'star';
           } else if (route.name === 'Profile') {
             iconName = 'user';
           }
@@ -40,6 +43,7 @@ export default function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'MoraShelf' }} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
+      <Tab.Screen name="For You" component={RecommendationsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
