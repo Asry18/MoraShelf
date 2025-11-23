@@ -83,7 +83,7 @@ export default function RecommendationsScreen({ navigation }) {
       <View style={[styles.header, { backgroundColor: theme.background }]}>
         <Text style={[styles.title, { color: theme.text }]}>Recommended for You</Text>
         <Text style={[styles.subtitle, { color: theme.textSub }]}>
-          Books based on your favorites and reading history
+          Books based on your favorites and recently viewed
         </Text>
       </View>
 
